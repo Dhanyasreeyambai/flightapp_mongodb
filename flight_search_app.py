@@ -3,15 +3,38 @@ import requests
 import json
 from datetime import datetime
 
+st.set_page_config(
+    page_title="Flight Search",
+    page_icon="✈️",
+    layout="centered"
+)
+
+required_secrets = ("SERP_API_KEY", "MONGO_URI")
+missing_secrets = [key for key in required_secrets if key not in st.secrets]
+
+if missing_secrets:
+    st.error(f"Missing required Streamlit secrets: {', '.join(missing_secrets)}")
+    st.write("Add the following entries to `.streamlit/secrets.toml` locally, or to your app's Secrets settings on Streamlit Community Cloud:")
+    st.code('SERP_API_KEY = "your-serpapi-key"\nMONGO_URI = "your-mongodb-connection-uri"', language="toml")
+    st.stop()
+
 API_KEY = st.secrets["SERP_API_KEY"]
 
 from pymongo import MongoClient
+from pymongo.errors import ConfigurationError
 
 MONGO_URI = st.secrets["MONGO_URI"]
 
-client = MongoClient(MONGO_URI)
+try:
+    client = MongoClient(MONGO_URI)
+except ConfigurationError:
+    st.error(
+        "MongoDB connection setup failed. Verify that MONGO_URI uses the current "
+        "Atlas connection string and that its cluster hostname resolves in DNS."
+    )
+    st.stop()
 
-db = client["streamlit_deploy"]
+db = client["Altfy_DB"]
 
 airports_collection = db["airports"]
 searches_collection = db["searches"]
@@ -194,12 +217,6 @@ def fetch_flights(origin, destination, date):
     except Exception as e:
         return f"Error: {str(e)}"
         return f"Error: {str(e)}"
-
-st.set_page_config(
-page_title="Flight Search",
-page_icon="✈️",
-layout="centered"
-)
 
 st.title("🌍 Real-Time Flight Information")
 
